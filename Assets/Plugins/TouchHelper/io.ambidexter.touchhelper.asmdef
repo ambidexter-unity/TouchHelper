@@ -1,8 +1,6 @@
 {
     "name": "io.ambidexter.touchhelper",
-    "references": [
-        "GUID:bc2bbdb10f84641ee8cbf977b8a446cb"
-    ],
+    "references": [],
     "optionalUnityReferences": [],
     "includePlatforms": [],
     "excludePlatforms": [],
