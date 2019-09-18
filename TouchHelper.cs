@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Extensions;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.EventSystems;
 
+// ReSharper disable once CheckNamespace
 namespace Common.TouchHelper
 {
 	/// <summary>
@@ -12,8 +11,6 @@ namespace Common.TouchHelper
 	/// </summary>
 	public static class TouchHelper
 	{
-		private static readonly List<RaycastResult> Res = new List<RaycastResult>();
-
 		private static readonly TouchCreator LastFakeTouch = new TouchCreator();
 
 		private static readonly TouchCreator ZoomGestureTouch1 = new TouchCreator();
@@ -24,6 +21,10 @@ namespace Common.TouchHelper
 		private static int _lockerId;
 		private static readonly List<int> Lockers = new List<int>();
 
+		/// <summary>
+		/// Блокировка тачей.
+		/// </summary>
+		/// <returns>Уникальный идентификатор блокировки.</returns>
 		public static int Lock()
 		{
 			var id = ++_lockerId;
@@ -31,13 +32,24 @@ namespace Common.TouchHelper
 			return id;
 		}
 
+		/// <summary>
+		/// Разблокировка тачей.
+		/// </summary>
+		/// <param name="id">Идентификатор снимаемой блокировки, полученный ранее из метода Lock().</param>
 		public static void Unlock(int id)
 		{
 			Lockers.Remove(id);
 		}
 
+		/// <summary>
+		/// Флаг, указывающий на наличие блокировки тачей.
+		/// </summary>
 		public static bool IsLocked => Lockers.Any();
 
+		/// <summary>
+		/// Получить все текущие тачи.
+		/// </summary>
+		/// <returns>Список текущих тачей.</returns>
 		public static Touch[] GetTouches()
 		{
 			if (IsLocked)
@@ -52,6 +64,13 @@ namespace Common.TouchHelper
 				: Input.touches;
 		}
 
+		/// <summary>
+		/// Получить текущий тач.
+		/// </summary>
+		/// <param name="touch">Возвращаемый тач.</param>
+		/// <param name="touchNum">Номер тача (для мультитача).</param>
+		/// <param name="ignoreLockers">Флаг, указывающий игнорировать блокировку.</param>
+		/// <returns>Возвращает <code>true</code>, если тач имеется и возвращен в первом аргументе.</returns>
 		public static bool GetTouch(out Touch touch, int touchNum = 0, bool ignoreLockers = false)
 		{
 			if (!ignoreLockers && IsLocked)
@@ -76,34 +95,11 @@ namespace Common.TouchHelper
 			return false;
 		}
 
-		public static bool CheckUiTouches(GameObject target)
-		{
-			Assert.IsNotNull(target);
-
-			var ped = new PointerEventData(EventSystem.current)
-			{
-				position = Input.touchCount > 0 ? Input.GetTouch(0).position : (Vector2) Input.mousePosition
-			};
-			Res.Clear();
-			EventSystem.current.RaycastAll(ped, Res);
-			if (Res.Count <= 0) return false;
-
-			var targetIsUnlocked = Res
-				.Select(result => result.gameObject.GetComponent<ILocker>())
-				.Where(locker => locker != null)
-				.Any(locker => locker.UnlockedObjects.Contains(target));
-
-
-			if (targetIsUnlocked)
-			{
-				DebugConditional.LogFormat("Object {0} was detected as unlocked.", target.name);
-				return true;
-			}
-
-			return !IsLocked;
-		}
-
-		public static bool IsPointerOverGameObject()
+		/// <summary>
+		/// Проверка на тач по элементу UI (не работает с UI в camera space).
+		/// </summary>
+		/// <returns>Возвращает <code>true</code>, если текущий тач приходится на элемент UI.</returns>
+		public static bool IsPointerOverUiObject()
 		{
 #if UNITY_EDITOR
 			return EventSystem.current.IsPointerOverGameObject();
